@@ -11,7 +11,13 @@ Config(
   shortcuts: {
     "Shutdown": (
       command: "shutdown now",
-      icon: "system-shutdown"
+      icon: Some("system-shutdown"),
+    ),
+    "Reboot": (
+      command: "systemctl reboot",
+      icon: Some("system-reboot"),
+      // Add additional keywords that make this result show up
+      keywords: Some([ "restart" ]),
     ),
   },
   // Override the shell used to launch the command
