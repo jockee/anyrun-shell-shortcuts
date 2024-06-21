@@ -1,8 +1,11 @@
 use std::{borrow::Borrow, cell::RefCell, collections::HashMap, env, fs, process::Command};
 
-use abi_stable::std_types::{
-    ROption::{self, RNone, RSome},
-    RString, RVec,
+use abi_stable::{
+    reexports::SelfOps,
+    std_types::{
+        ROption::{self, RNone, RSome},
+        RString, RVec,
+    },
 };
 use anyrun_plugin::*;
 use fuzzy_matcher::FuzzyMatcher;
@@ -11,6 +14,7 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 struct Shortcut {
     command: RString,
+    keywords: ROption<RVec<RString>>,
     icon: ROption<RString>,
 }
 
@@ -27,7 +31,7 @@ struct State {
 
 #[init]
 fn init(config_dir: RString) -> State {
-    let config = match fs::read_to_string(format!("{}/shell-shortcuts.ron", config_dir)) {
+    let mut config = match fs::read_to_string(format!("{}/shell-shortcuts.ron", config_dir)) {
         Ok(content) => match ron::from_str::<Config>(&content) {
             Ok(config) => config,
             Err(why) => {
@@ -41,6 +45,15 @@ fn init(config_dir: RString) -> State {
         },
         Err(_) => Config::default(),
     };
+
+    config.shortcuts.iter_mut().for_each(|(name, shortcut)| {
+        let mut keywords = shortcut.keywords.take().unwrap_or_else(RVec::new);
+
+        keywords.push(shortcut.command.clone());
+        keywords.push(name.clone());
+
+        shortcut.keywords = RSome(keywords);
+    });
 
     let shell = if let RSome(shell) = &config.shell {
         shell.clone()
@@ -69,7 +82,14 @@ fn get_matches(input: RString, state: &State) -> RVec<Match> {
         .config
         .shortcuts
         .iter()
-        .filter(|(key, _)| matcher.fuzzy_indices(&key, &input).is_some())
+        .filter(|(_, val)| {
+            match &val.keywords {
+                RSome(keywords) => keywords
+                    .iter()
+                    .any(|keyword| matcher.fuzzy_indices(&keyword, &input).is_some()),
+                RNone => unreachable!("Keywords is undefined")
+            }
+        })
         .map(|(key, val)| Match {
             title: key.clone(),
             description: RSome(val.command.clone()),
