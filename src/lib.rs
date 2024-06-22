@@ -46,7 +46,9 @@ fn init(config_dir: RString) -> State {
     config.shortcuts.iter_mut().for_each(|(name, shortcut)| {
         let mut keywords = shortcut.keywords.take().unwrap_or_else(RString::new);
 
+        keywords.push(' ');
         keywords.push_str(&shortcut.command);
+        keywords.push(' ');
         keywords.push_str(name);
 
         shortcut.keywords = RSome(keywords);
