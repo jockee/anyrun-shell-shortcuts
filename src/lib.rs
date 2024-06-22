@@ -1,12 +1,9 @@
-use std::{borrow::Borrow, cell::RefCell, collections::HashMap, env, fs, process::Command};
+use std::{collections::HashMap, env, fs, process::Command};
 
-use abi_stable::{
-    reexports::SelfOps,
-    std_types::{
+use abi_stable::std_types::{
         ROption::{self, RNone, RSome},
         RString, RVec,
-    },
-};
+    };
 use anyrun_plugin::*;
 use fuzzy_matcher::FuzzyMatcher;
 use serde::Deserialize;
@@ -14,7 +11,7 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 struct Shortcut {
     command: RString,
-    keywords: ROption<RVec<RString>>,
+    keywords: ROption<RString>,
     icon: ROption<RString>,
 }
 
@@ -47,10 +44,10 @@ fn init(config_dir: RString) -> State {
     };
 
     config.shortcuts.iter_mut().for_each(|(name, shortcut)| {
-        let mut keywords = shortcut.keywords.take().unwrap_or_else(RVec::new);
+        let mut keywords = shortcut.keywords.take().unwrap_or_else(RString::new);
 
-        keywords.push(shortcut.command.clone());
-        keywords.push(name.clone());
+        keywords.push_str(&shortcut.command);
+        keywords.push_str(name);
 
         shortcut.keywords = RSome(keywords);
     });
@@ -82,13 +79,9 @@ fn get_matches(input: RString, state: &State) -> RVec<Match> {
         .config
         .shortcuts
         .iter()
-        .filter(|(_, val)| {
-            match &val.keywords {
-                RSome(keywords) => keywords
-                    .iter()
-                    .any(|keyword| matcher.fuzzy_indices(&keyword, &input).is_some()),
-                RNone => unreachable!("Keywords is undefined")
-            }
+        .filter(|(_, val)| match &val.keywords {
+            RSome(keywords) => matcher.fuzzy_indices(&keywords, &input).is_some(),
+            RNone => unreachable!("Keywords is undefined"),
         })
         .map(|(key, val)| Match {
             title: key.clone(),

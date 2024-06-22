@@ -16,8 +16,8 @@ Config(
     "Reboot": (
       command: "systemctl reboot",
       icon: Some("system-reboot"),
-      // Add additional keywords that make this result show up
-      keywords: Some([ "restart" ]),
+      // Add additional space separated keywords that make this result show up
+      keywords: Some("restart"),
     ),
   },
   // Override the shell used to launch the command
