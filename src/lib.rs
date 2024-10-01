@@ -89,7 +89,7 @@ fn get_matches(input: RString, state: &State) -> RVec<Match> {
             title: key.clone(),
             description: RSome(val.command.clone()),
             use_pango: false,
-            icon: val.icon.clone(),
+            icon: RSome(val.command.clone()),
             id: RNone,
         })
         .collect()
@@ -97,7 +97,7 @@ fn get_matches(input: RString, state: &State) -> RVec<Match> {
 
 #[handler]
 fn handler(selection: Match, state: &State) -> HandleResult {
-    let command = selection.description.unwrap();
+    let command = selection.icon.unwrap();
     if let Err(why) = Command::new(state.shell.as_str())
         .arg("-c")
         .arg(command.as_str())
