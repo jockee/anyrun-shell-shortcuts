@@ -87,7 +87,7 @@ fn get_matches(input: RString, state: &State) -> RVec<Match> {
         })
         .map(|(key, val)| Match {
             title: key.clone(),
-            description: RNone,
+            description: RSome(val.command.clone()),
             use_pango: false,
             icon: val.icon.clone(),
             id: RNone,
